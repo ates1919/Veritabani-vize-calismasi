@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUBÜ - Veritabanı Güvenliği ve Savunma Algoritmaları 3D Portalı</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#090d16',
+                            card: '#111827',
+                            border: '#1f293d',
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            violet: '#8b5cf6',
+                            rose: '#f43f5e',
+                            amber: '#f59e0b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js for 3D Background & Interactive Objects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;900&display=swap');
+
+        body {
+            background-color: #060911;
+            color: #f3f4f6;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(6, 182, 212, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.3);
+            transform: translateY(-3px);
+        }
+
+        /* 3D Flip Card Effect */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        /* Glowing Effects */
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+        }
+        .glow-violet {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.35);
+        }
+
+        /* CSS 3D Layered Pyramid */
+        .pyramid-container {
+            perspective: 800px;
+        }
+        .pyramid-layer {
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            transform-style: preserve-3d;
+        }
+        .pyramid-layer:hover {
+            transform: translateZ(20px) scale(1.02);
+        }
+
+        /* Canvas background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Code highlight */
+        .sql-keyword { color: #f43f5e; font-weight: 600; }
+        .sql-func { color: #8b5cf6; font-weight: 600; }
+        .sql-str { color: #10b981; }
+        .sql-num { color: #f59e0b; }
+        .sql-comment { color: #6b7280; font-style: italic; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-200 antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- 3D Canvas Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- App Wrapper -->
+    <div class="flex flex-col min-h-screen">
+
+        <!-- Top Navigation Bar -->
+        <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                
+                <!-- Logo & Course Info -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-600 flex items-center justify-center glow-cyan shadow-lg">
+                        <i class="fa-solid fa-shield-halved text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold tracking-wider px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">SUBÜ</span>
+                            <span class="text-xs text-slate-400 font-mono">Öğr. Gör. Burak Suha YÜKSEL</span>
+                        </div>
+                        <h1 class="text-lg font-extrabold text-white tracking-tight flex items-center gap-2">
+                            Veritabanı Güvenliği ve Savunma Algoritmaları
+                            <span class="text-xs font-normal text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full">v3.0 3D Master Edition</span>
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Global Progress Badge & Quick Actions -->
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex items-center space-x-3 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-2">
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400">Genel İlerleme</div>
+                            <div class="text-sm font-bold text-cyan-400 font-mono" id="global-progress-text">0 / 7 Modül Complete</div>
+                        </div>
+                        <div class="w-12 bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
+                            <div id="global-progress-bar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <button onclick="resetAllProgress()" class="text-xs text-slate-400 hover:text-rose-400 px-3 py-2 rounded-lg border border-slate-800 hover:border-rose-500/30 transition-all flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> Sıfırla
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="max-w-7xl mx-auto mt-3 pt-2 border-t border-slate-800/60 overflow-x-auto scrollbar-none flex space-x-2">
+                <button onclick="switchTab('mod1')" id="tab-mod1" class="tab-btn active px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 glow-cyan">
+                    <i class="fa-solid fa-layer-group"></i> 1. Mimari & Kavramlar
+                </button>
+                <button onclick="switchTab('mod2')" id="tab-mod2" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-server"></i> 2. MS SQL Engine & Dosyalar
+                </button>
+                <button onclick="switchTab('mod3')" id="tab-mod3" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-terminal"></i> 3. Canlı SQL Lab
+                </button>
+                <button onclick="switchTab('mod4')" id="tab-mod4" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-diagram-project"></i> 4. 3D JOIN & Venn Lab
+                </button>
+                <button onclick="switchTab('mod5')" id="tab-mod5" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-clone"></i> 5. 3D Flashcards (50)
+                </button>
+                <button onclick="switchTab('mod6')" id="tab-mod6" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-code"></i> 6. Klasik Kod Kampı (20)
+                </button>
+                <button onclick="switchTab('mod7')" id="tab-mod7" class="tab-btn px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20">
+                    <i class="fa-solid fa-award"></i> 7. Gerçek Sınav Provası
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content Viewport -->
+        <main class="flex-grow max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-8">
+
+            <!-- MODULE 1: 3D MİMARİ & TEMEL KAVRAMLAR -->
+            <section id="mod1-content" class="tab-content space-y-8">
+                <!-- Banner -->
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-cyan-500 relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl text-cyan-400 pointer-events-none">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <span class="text-xs font-bold text-cyan-400 tracking-wider uppercase font-mono">Modül 1 • Temel Teori & Sınav Garantili Tanımlar</span>
+                    <h2 class="text-2xl font-black text-white mt-1">Veritabanı Mimarisi, ANSI-SPARC ve DIKW Piramidi</h2>
+                    <p class="text-slate-400 text-sm mt-2 max-w-3xl">
+                        Dersin ilk bölümünü oluşturan veri hiyerarşisi, geleneksel dosya sistemlerinin kronik 4 zafiyeti, VTYS bileşenleri, 3 seviyeli soyutlama mimarisi ve SQL komut grupları.
+                    </p>
+                </div>
+
+                <!-- 3D Interactive DIKW Pyramid & File System Flaws -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Interactive DIKW Pyramid -->
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-pyramid-cheops text-cyan-400"></i>
+                                    İnteraktif DIKW Piramidi (Veri -> Bilgelik)
+                                </h3>
+                                <span class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">3D Katmanlı</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-6">Katmanların üzerine tıklayarak sınav tanımını ve hafıza çivisini inceleyin.</p>
+
+                            <!-- 3D Pyramid Visual -->
+                            <div class="pyramid-container space-y-2 max-w-md mx-auto my-4">
+                                <!-- Wisdom -->
+                                <div onclick="selectDikw('wisdom')" id="dikw-wisdom" class="pyramid-layer cursor-pointer p-3 rounded-lg bg-gradient-to-r from-amber-500/30 to-amber-600/40 border border-amber-500/50 text-center font-bold text-amber-300 text-sm glow-amber">
+                                    👑 HİKMET / BİLGELİK (Wisdom)
+                                </div>
+                                <!-- Knowledge -->
+                                <div onclick="selectDikw('knowledge')" id="dikw-knowledge" class="pyramid-layer cursor-pointer p-3.5 rounded-lg bg-gradient-to-r from-violet-500/30 to-violet-600/40 border border-violet-500/50 text-center font-bold text-violet-300 text-sm">
+                                    🧠 BİLGİ BİRİKİMİ (Knowledge)
+                                </div>
+                                <!-- Information -->
+                                <div onclick="selectDikw('info')" id="dikw-info" class="pyramid-layer cursor-pointer p-4 rounded-lg bg-gradient-to-r from-cyan-500/30 to-cyan-600/40 border border-cyan-500/50 text-center font-bold text-cyan-300 text-sm">
+                                    📊 BİLGİ (Information)
+                                </div>
+                                <!-- Data -->
+                                <div onclick="selectDikw('data')" id="dikw-data" class="pyramid-layer cursor-pointer p-4.5 rounded-lg bg-gradient-to-r from-slate-700/50 to-slate-800/60 border border-slate-600/50 text-center font-bold text-slate-300 text-sm">
+                                    📄 VERİ (Data - Ham Gerçekler)
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info Card output -->
+                        <div id="dikw-details" class="mt-4 p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
+                            <div class="flex items-center justify-between text-cyan-400 font-bold border-b border-slate-800 pb-1">
+                                <span id="dikw-title">📄 VERİ (Data)</span>
+                                <span class="bg-cyan-950 text-cyan-300 text-[10px] px-2 py-0.5 rounded">3 Saniyede Ezber</span>
+                            </div>
+                            <p class="text-slate-300" id="dikw-def">İşlenmemiş, ham, bağlamsız gerçekler (Örn: '38', 'Ali', '0544...'). Tek başına karar verdirmez.</p>
+                            <div class="p-2 rounded bg-rose-950/40 border border-rose-500/30 text-rose-300 font-mono text-[11px]">
+                                <strong>⚠️ Sınav Tuzağı:</strong> Hoca "İşlenmiş ve bağlam kazanmış veri nedir?" diye sorarsa cevap <strong>BİLGİ (Information)</strong>'dır, Veri değildir!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Traditional File Systems 4 Weaknesses -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                                Geleneksel Dosya İşleme Sistemlerinin 4 Kronik Eksikliği
+                            </h3>
+                            <span class="text-xs text-rose-400 bg-rose-950/50 border border-rose-500/30 px-2 py-0.5 rounded font-mono">PDF 1 Sınav Sorusu</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Text, Excel, CSV gibi dosya bazlı sistemlerin VTYS kullanımını zorunlu kılan 4 temel zafiyeti:</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Flaw 1 -->
+                            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-rose-500/20 hover:border-rose-500/50 transition-all space-y-1">
+                                <div class="flex items-center justify-between text-rose-400 font-bold text-xs">
+                                    <span>1. Veri Tekrarı (Redundancy)</span>
+                                    <i class="fa-solid fa-copy"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-300">Aynı öğrenci isminin hem Notlar hem Adres hem Defter dosyalarında tekrar tekrar saklanması. Disk israfı yaratır.</p>
+                            </div>
+
+                            <!-- Flaw 2 -->
+                            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/50 transition-all space-y-1">
+                                <div class="flex items-center justify-between text-amber-400 font-bold text-xs">
+                                    <span>2. Veri Tutarsızlığı (Inconsistency)</span>
+                                    <i class="fa-solid fa-code-compare"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-300">Öğrenci adresini değiştirince bir dosyada güncellenip diğerinde unutulursa "Hangi adres doğru?" kaosu doğar.</p>
+                            </div>
+
+                            <!-- Flaw 3 -->
+                            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-violet-500/20 hover:border-violet-500/50 transition-all space-y-1">
+                                <div class="flex items-center justify-between text-violet-400 font-bold text-xs">
+                                    <span>3. Veri Bağımlılığı (Data Dependency)</span>
+                                    <i class="fa-solid fa-link-slash"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-300">Dosya yapısına 4. sütun eklenince o dosyayı okuyan TÜM C# / Java / Python kodlarının patlaması ve baştan yazılması.</p>
+                            </div>
+
+                            <!-- Flaw 4 -->
+                            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-cyan-500/20 hover:border-cyan-500/50 transition-all space-y-1">
+                                <div class="flex items-center justify-between text-cyan-400 font-bold text-xs">
+                                    <span>4. Güvenlik & Eşzamanlılık (Concurrency)</span>
+                                    <i class="fa-solid fa-lock"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-300">İki kullanıcı aynı Excel dosyasında aynı anda hücre değiştiremez (Kilitlenir). Satır seviyesinde kilit yoktur.</p>
+                            </div>
+                        </div>
+
+                        <!-- Excel vs DBMS comparison badge -->
+                        <div class="p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/30 flex items-center space-x-4">
+                            <div class="text-3xl text-cyan-400"><i class="fa-solid fa-industry"></i></div>
+                            <div class="text-xs space-y-1">
+                                <span class="font-bold text-cyan-300">Neden Excel Değil VTYS?:</span>
+                                <p class="text-slate-300">Excel = Küçük atölye (tek kullanıcı, raporlama, 1M satır sınırı, yavaş). VTYS = Devasa fabrika (binlerce eşzamanlı kullanıcı, ACID garantisi, saniyede milyon sorgu).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3D Interactive ANSI-SPARC Architecture & Data Independence -->
+                <div class="glass-panel p-6 rounded-2xl space-y-6">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                        <div>
+                            <span class="text-xs font-bold text-violet-400 font-mono">ANSI-SPARC 3 SEVİYELİ MİMARİ</span>
+                            <h3 class="text-xl font-bold text-white">VTYS Soyutlama Seviyeleri ve Veri Bağımsızlığı</h3>
+                        </div>
+                        <div class="flex space-x-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30">Dış (External)</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Kavramsal (Conceptual)</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">İç/Fiziksel (Internal)</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Architectural Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Level 1: External -->
+                        <div class="p-5 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-900/90 border border-violet-500/30 hover:border-violet-500 transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="w-10 h-10 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold text-lg mb-3">1</div>
+                                <h4 class="text-base font-bold text-white">Dış Seviye / Görünüm (External Level)</h4>
+                                <p class="text-xs text-slate-400 mt-2">Kullanıcının veya uygulamanın gördüğü kişiselleştirilmiş görünüm (View). Güvenlik için yetkisi olmayan sütunlar gizlenir (Örn: Öğrenci harç miktarını göremez).</p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-violet-300">
+                                💡 Mantıksal Veri Bağımsızlığı burada gerçekleşir!
+                            </div>
+                        </div>
+
+                        <!-- Level 2: Conceptual -->
+                        <div class="p-5 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-900/90 border border-cyan-500/30 hover:border-cyan-500 transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-lg mb-3">2</div>
+                                <h4 class="text-base font-bold text-white">Kavramsal Seviye (Conceptual Level)</h4>
+                                <p class="text-xs text-slate-400 mt-2">Veritabanında HANGİ verilerin tutulduğunu ve aralarındaki İLİŞKİLERİ tanımlayan toplu mantıksal şema (Tables, Primary Key, Foreign Key, Constraints).</p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-cyan-300">
+                                🎯 DBA & Geliştiricinin ana çalışma alanıdır.
+                            </div>
+                        </div>
+
+                        <!-- Level 3: Internal -->
+                        <div class="p-5 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-900/90 border border-emerald-500/30 hover:border-emerald-500 transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg mb-3">3</div>
+                                <h4 class="text-base font-bold text-white">İç / Fiziksel Seviye (Internal/Physical)</h4>
+                                <p class="text-xs text-slate-400 mt-2">Verinin diskte NASIL saklandığı (B-Tree İndeksler, Page blokları, Sıkıştırma, MDF/LDF dosya yerleşimi, Blok boyutları).</p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-300">
+                                ⚡ Fiziksel Veri Bağımsızlığı burada sağlanır!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Independence Comparison Box -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-cyan-400">🔹 Mantıksal Veri Bağımsızlığı (Logical Data Independence)</span>
+                            <p class="text-xs text-slate-300">Kavramsal şemaya yeni bir sütun/tablo eklendiğinde mevcut kullanıcı görünümlerinin (External View) veya yazılım kodlarının <u>etkilenmemesi</u>.</p>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-emerald-400">🟢 Fiziksel Veri Bağımsızlığı (Physical Data Independence)</span>
+                            <p class="text-xs text-slate-300">Diski HDD'den NVMe SSD'ye geçirmek, yeni indeks eklemek veya dosyayı başka diske taşımak kavramsal şemayı veya SQL sorgularını <u>değiştirmez</u>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SQL 4 Command Groups & ER Diagram Symbols -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- SQL Groups -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-code-branch text-amber-400"></i>
+                            SQL Komut Grupları (4 Temel Kategori)
+                        </h3>
+                        <div class="space-y-3">
+                            <!-- DDL -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-rose-500/30 flex items-start justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-rose-400 font-mono">DDL (Data Definition Language)</span>
+                                    <p class="text-xs text-slate-300">Veritabanı yapısını ve Metadata'yı oluşturur/değiştirir.</p>
+                                    <code class="text-[11px] text-rose-300 font-mono mt-1 block">CREATE, ALTER, DROP, TRUNCATE</code>
+                                </div>
+                                <span class="text-[10px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded">Yapısal</span>
+                            </div>
+
+                            <!-- DML -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-cyan-500/30 flex items-start justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-cyan-400 font-mono">DML (Data Manipulation Language)</span>
+                                    <p class="text-xs text-slate-300">Tablo içindeki veriler üzerinde günlük işlemleri yapar.</p>
+                                    <code class="text-[11px] text-cyan-300 font-mono mt-1 block">SELECT, INSERT, UPDATE, DELETE</code>
+                                </div>
+                                <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">%90 Kullanım</span>
+                            </div>
+
+                            <!-- DCL -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-violet-500/30 flex items-start justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-violet-400 font-mono">DCL (Data Control Language)</span>
+                                    <p class="text-xs text-slate-300">Kullanıcı yetkilerini ve güvenlik izinlerini yönetir.</p>
+                                    <code class="text-[11px] text-violet-300 font-mono mt-1 block">GRANT (Yetki Ver), REVOKE (Yetki Al)</code>
+                                </div>
+                                <span class="text-[10px] bg-violet-950 text-violet-300 px-2 py-0.5 rounded">Güvenlik</span>
+                            </div>
+
+                            <!-- TCL -->
+                            <div class="p-3 rounded-xl bg-slate-900 border border-emerald-500/30 flex items-start justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-emerald-400 font-mono">TCL (Transaction Control Language)</span>
+                                    <p class="text-xs text-slate-300">İşlem bütünlüğünü (Atomicity) yönetir.</p>
+                                    <code class="text-[11px] text-emerald-300 font-mono mt-1 block">BEGIN TRAN, COMMIT, ROLLBACK</code>
+                                </div>
+                                <span class="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded">Bütünlük</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ER Diagram Cheat Sheet -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-shapes text-emerald-400"></i>
+                            E-R Diyagramı Sembolleri & Anlamları
+                        </h3>
+                        <p class="text-xs text-slate-400">Sınavda çizim veya sembol eşleştirme soruları için hızlı rehber:</p>
+
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                                <div class="font-bold text-white flex items-center gap-2">
+                                    <span class="w-4 h-3 border-2 border-cyan-400 inline-block"></span> Dikdörtgen
+                                </div>
+                                <p class="text-slate-400 text-[11px]">Varlık Kümesi (Entity) • Örn: Öğrenci, Ders</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                                <div class="font-bold text-white flex items-center gap-2">
+                                    <span class="w-4 h-3 rounded-full border-2 border-emerald-400 inline-block"></span> Elips
+                                </div>
+                                <p class="text-slate-400 text-[11px]">Öznitelik / Nitelik (Attribute) • Örn: Ad, Soyad</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                                <div class="font-bold text-white flex items-center gap-2">
+                                    <span class="w-4 h-3 rounded-full border-2 border-amber-400 underline inline-block"></span> Altı Çizili Elips
+                                </div>
+                                <p class="text-slate-400 text-[11px]">Birincil Anahtar (Primary Key)</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                                <div class="font-bold text-white flex items-center gap-2">
+                                    <span class="w-3 h-3 rotate-45 border-2 border-violet-400 inline-block"></span> Baklava Dilimi
+                                </div>
+                                <p class="text-slate-400 text-[11px]">İlişki (Relationship) • Örn: Dersi Alır</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1 col-span-2">
+                                <div class="font-bold text-white flex items-center gap-2">
+                                    <span class="w-4 h-3 rounded-full border-2 border-dashed border-rose-400 inline-block"></span> Çift / Çift Çizgili Elips
+                                </div>
+                                <p class="text-slate-400 text-[11px]">Çok Değerli Öznitelik (Multivalued Attribute) • Örn: Birden fazla Telefon numarası veya E-posta olması.</p>
+                            </div>
+                        </div>
+
+                        <!-- 3VL Box -->
+                        <div class="p-3 rounded-xl bg-violet-950/40 border border-violet-500/30 text-xs space-y-1">
+                            <span class="font-bold text-violet-300">⚠️ NULL ve 3 Değerli Mantık (3VL):</span>
+                            <p class="text-slate-300 text-[11px]">NULL ne 0'dır ne de boş string ('')! Bilinmezliktir. <code class="text-cyan-300 font-mono">Telefon = NULL</code> sorgusu her zaman FALSE döner. Doğrusu: <code class="text-emerald-300 font-mono">Telefon IS NULL</code> kullanılmalıdır.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 2: MS SQL MİMARİSİ & GÜVENLİK SENARYOLARI -->
+            <section id="mod2-content" class="tab-content hidden space-y-8">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-violet-500 relative overflow-hidden">
+                    <span class="text-xs font-bold text-violet-400 tracking-wider uppercase font-mono">Modül 2 • Derinlemesine Sistem İç Mimarisi</span>
+                    <h2 class="text-2xl font-black text-white mt-1">MS SQL Engine, System DBs, WAL & Cascade Kuralları</h2>
+                    <p class="text-slate-400 text-sm mt-2">
+                        Fiziksel MDF/LDF/NDF dosyaları, Master/Model/MSDB/TempDB rolleri, RAM-WAL-Dirty Page çalışma prensibi, Collation ve Cascade zafiyetleri.
+                    </p>
+                </div>
+
+                <!-- System Databases Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Master -->
+                    <div class="glass-panel p-5 rounded-2xl border-t-4 border-t-rose-500 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-white text-base">1. MASTER</h3>
+                            <i class="fa-solid fa-crown text-rose-400"></i>
+                        </div>
+                        <span class="text-[10px] font-mono text-rose-300 bg-rose-950/60 px-2 py-0.5 rounded">Sistemin Kalbi</span>
+                        <p class="text-xs text-slate-300">Tüm login bilgileri, bağlı sunucular (linked servers), sistem ayarları ve diğer tüm DB'lerin diskteki yerleri burada tutulur.</p>
+                        <p class="text-[11px] text-rose-400 font-semibold pt-2 border-t border-slate-800">⚠️ Master bozulursa SQL Server servisi hiç BÂŞLAMAZ!</p>
+                    </div>
+
+                    <!-- Model -->
+                    <div class="glass-panel p-5 rounded-2xl border-t-4 border-t-cyan-500 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-white text-base">2. MODEL</h3>
+                            <i class="fa-solid fa-cube text-cyan-400"></i>
+                        </div>
+                        <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded">Şablon Kalıbı</span>
+                        <p class="text-xs text-slate-300">Yeni açılan HER veritabanı Model DB'nin bir kopyası olarak doğar. Model'e tablo eklersen yeni DB'lerde otomatik çıkar.</p>
+                        <p class="text-[11px] text-cyan-400 font-semibold pt-2 border-t border-slate-800">💡 Şablon fabrika gibidir.</p>
+                    </div>
+
+                    <!-- MSDB -->
+                    <div class="glass-panel p-5 rounded-2xl border-t-4 border-t-amber-500 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-white text-base">3. MSDB</h3>
+                            <i class="fa-solid fa-robot text-amber-400"></i>
+                        </div>
+                        <span class="text-[10px] font-mono text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded">SQL Agent Beyni</span>
+                        <p class="text-xs text-slate-300">Zamanlanmış görevler (Jobs), otomatik gece 03:00 yedekleri, e-posta uyarıları ve yedek alma geçmişi burada tutulur.</p>
+                        <p class="text-[11px] text-amber-400 font-semibold pt-2 border-t border-slate-800">🤖 SQL Server Agent yönetir.</p>
+                    </div>
+
+                    <!-- TempDB -->
+                    <div class="glass-panel p-5 rounded-2xl border-t-4 border-t-emerald-500 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-white text-base">4. TEMPDB</h3>
+                            <i class="fa-solid fa-bolt text-emerald-400"></i>
+                        </div>
+                        <span class="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded">Ortak Çalışma Masası</span>
+                        <p class="text-xs text-slate-300">Geçici tablolar (#Temp), sıralama (SORT) ve JOIN işlemleri burada yürütülür. Servis yeniden başlayınca sıfırlanır.</p>
+                        <p class="text-[11px] text-emerald-400 font-semibold pt-2 border-t border-slate-800">⚡ Şişerse sunucu kilitlenir! SSD'de olmalı.</p>
+                    </div>
+                </div>
+
+                <!-- Physical File Structure & WAL Interactive Simulator -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <!-- Physical Files Card -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-hard-drive text-cyan-400"></i>
+                            Fiziksel Dosya Mimarisi (.MDF, .LDF, .NDF)
+                        </h3>
+                        
+                        <div class="space-y-3">
+                            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-cyan-400 font-mono">.MDF (Primary Data File)</span>
+                                    <p class="text-xs text-slate-300">Ana veri dosyası. Tablolar, indeksler, prosedürler buradadır.</p>
+                                </div>
+                                <span class="text-xs font-mono text-slate-400">Zorunlu (1 Adet)</span>
+                            </div>
+
+                            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-rose-400 font-mono">.LDF (Transaction Log File)</span>
+                                    <p class="text-xs text-slate-300">Kara kutu. Her INSERT/UPDATE/DELETE önce buraya yazılır.</p>
+                                </div>
+                                <span class="text-xs font-mono text-rose-400">En Az 1 Adet</span>
+                            </div>
+
+                            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-violet-400 font-mono">.NDF (Secondary Data File)</span>
+                                    <p class="text-xs text-slate-300">DB büyüdüğünde veriyi farklı disklere yaymak için ikincil dosya.</p>
+                                </div>
+                                <span class="text-xs font-mono text-slate-400">İsteğe Bağlı</span>
+                            </div>
+                        </div>
+
+                        <!-- Extent vs Page -->
+                        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-white">8 KB Page & 64 KB Extent Mantığı:</span>
+                                <span class="text-cyan-400 font-mono font-bold">1 Extent = 8 Page</span>
+                            </div>
+                            <p class="text-slate-300">SQL Server diskten yeri 8 KB'lık Page birimlerinde tutar. 8 adet Page birleşerek 64 KB'lık Extent bloğunu oluşturur.</p>
+                        </div>
+                    </div>
+
+                    <!-- Interactive WAL (Write-Ahead Logging) Simulator -->
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-microchip text-emerald-400"></i>
+                                    WAL & Checkpoint Simülatörü
+                                </h3>
+                                <span class="text-xs bg-emerald-950 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded">İnteraktif</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">Write-Ahead Logging: Güncelleme önce RAM'de yapılır, aynı an LDF'ye yazılır. Henüz MDF'ye yazılmamıştır (Dirty Page)!</p>
+
+                            <!-- Simulation Visual Container -->
+                            <div class="my-6 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
+                                <div class="grid grid-cols-3 gap-2 text-center text-xs font-mono">
+                                    <div id="sim-ram" class="p-3 rounded-lg bg-slate-900 border border-slate-700 transition-all">
+                                        <div class="text-slate-400 mb-1">RAM (Buffer Pool)</div>
+                                        <div id="sim-ram-status" class="font-bold text-slate-300">Temiz Page</div>
+                                    </div>
+                                    <div id="sim-ldf" class="p-3 rounded-lg bg-slate-900 border border-slate-700 transition-all">
+                                        <div class="text-slate-400 mb-1">.LDF (Log)</div>
+                                        <div id="sim-ldf-status" class="font-bold text-slate-300">Boş</div>
+                                    </div>
+                                    <div id="sim-mdf" class="p-3 rounded-lg bg-slate-900 border border-slate-700 transition-all">
+                                        <div class="text-slate-400 mb-1">.MDF (Data File)</div>
+                                        <div id="sim-mdf-status" class="font-bold text-slate-300">Eski Veri</div>
+                                    </div>
+                                </div>
+
+                                <div id="sim-msg" class="text-xs font-mono text-cyan-400 text-center min-h-[20px]">
+                                    Simülasyonu başlatmak için aşağıdaki butonlara tıklayın.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="runWalStep('update')" class="flex-1 py-2 px-3 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white transition-all">
+                                1. UPDATE Çalıştır (RAM & LDF)
+                            </button>
+                            <button onclick="runWalStep('checkpoint')" class="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-all">
+                                2. CHECKPOINT Tetikle (MDF'ye Yaz)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Types Catastrophe & Collation -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Data Types -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-database text-amber-400"></i>
+                            Veri Tipleri & Yanlış Seçim Felaketi
+                        </h3>
+
+                        <div class="space-y-2 text-xs">
+                            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                                <span class="font-mono text-cyan-400 font-bold">TINYINT</span>
+                                <span class="text-slate-300">1 Byte (0 - 255) • Öğrenci Notu, Yaş, Devamsızlık için ideal.</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                                <span class="font-mono text-cyan-400 font-bold">INT / BIGINT</span>
+                                <span class="text-slate-300">INT (4 Byte, ±2 Milyar) / BIGINT (8 Byte, Dev TCKN/ID).</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                                <span class="font-mono text-emerald-400 font-bold">CHAR(11)</span>
+                                <span class="text-slate-300">Sabit 11 hane. TC Kimlik No, Plaka gibi boyutu sabitleşmiş alanlar.</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                                <span class="font-mono text-emerald-400 font-bold">NVARCHAR(n)</span>
+                                <span class="text-slate-300">National Unicode (Karakter başı 2 Byte). Türkçe 'İ, ş, ğ' bozulmaz.</span>
+                            </div>
+                        </div>
+
+                        <!-- Disaster callout -->
+                        <div class="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs space-y-1">
+                            <span class="font-bold text-rose-300">🔥 Yanlış Veri Tipi Felaketi:</span>
+                            <p class="text-slate-300 text-[11px]">TCKN için <code class="text-rose-400 font-mono">NVARCHAR(MAX)</code> seçilirse SQL Server RAM'de devasa Memory Grant ayırır. Milyon satırda sunucu <code class="text-rose-400 font-mono">Out of Memory</code> ile kilitlenir!</p>
+                        </div>
+                    </div>
+
+                    <!-- Collation & Cascade -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-[#] text-violet-400"></i>
+                            Collation & ON DELETE CASCADE Davranışları
+                        </h3>
+
+                        <!-- Collation breakdown -->
+                        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                            <div class="font-mono font-bold text-violet-300">Turkish_CI_AS Ne Demektir?</div>
+                            <ul class="space-y-1 text-slate-300 text-[11px] list-disc list-inside">
+                                <li><strong>CI (Case Insensitive):</strong> Büyük/küçük harf DUYARSIZDIR ('ali' = 'ALI').</li>
+                                <li><strong>AS (Accent Sensitive):</strong> Şapka/Nokta DUYARLIDIR ('I' != 'İ', 'O' != 'Ö').</li>
+                            </ul>
+                        </div>
+
+                        <!-- Cascade Rules -->
+                        <div class="space-y-2 text-xs">
+                            <span class="font-bold text-white">ON DELETE Seçenekleri:</span>
+                            <div class="grid grid-cols-3 gap-2 text-[11px] font-mono">
+                                <div class="p-2 rounded bg-slate-900 border border-emerald-500/30 text-emerald-300 text-center">
+                                    NO ACTION
+                                    <div class="text-[9px] text-slate-400 font-sans mt-0.5">Varsayılan (Engeller)</div>
+                                </div>
+                                <div class="p-2 rounded bg-slate-900 border border-rose-500/30 text-rose-300 text-center">
+                                    CASCADE
+                                    <div class="text-[9px] text-slate-400 font-sans mt-0.5">Zincirleme Sil</div>
+                                </div>
+                                <div class="p-2 rounded bg-slate-900 border border-amber-500/30 text-amber-300 text-center">
+                                    SET NULL
+                                    <div class="text-[9px] text-slate-400 font-sans mt-0.5">FK'yı NULL Yap</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 3: CANLI SQL LABORATUVARI -->
+            <section id="mod3-content" class="tab-content hidden space-y-8">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-400 tracking-wider uppercase font-mono">Modül 3 • İnteraktif SQL Sorgu Motoru</span>
+                        <h2 class="text-2xl font-black text-white mt-1">Canlı SQL Laboratuvarı & Hoca Soru Şablonları</h2>
+                        <p class="text-slate-400 text-sm mt-1">
+                            Slaytlardaki birebir `Ogrenci`, `OgrenciAdres` ve `KantinKayitlari` verileri üzerinde canlı SQL çalıştırın.
+                        </p>
+                    </div>
+                    <button onclick="resetLabData()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-database"></i> Verileri Sıfırla
+                    </button>
+                </div>
+
+                <!-- Preset Queries Carousel -->
+                <div class="glass-panel p-4 rounded-2xl space-y-2">
+                    <span class="text-xs font-bold text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-amber-400"></i> Slaytlardaki Hazır Sınav Sorguları (Tıklayıp Çalıştırın):
+                    </span>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <button onclick="loadPresetQuery(1)" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-cyan-950 border border-slate-700 hover:border-cyan-500/50 text-cyan-300 transition-all">1. Tüm Öğrencileri Seç</button>
+                        <button onclick="loadPresetQuery(2)" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-cyan-950 border border-slate-700 hover:border-cyan-500/50 text-cyan-300 transition-all">2. Not Ortalaması Hesapla (AS)</button>
+                        <button onclick="loadPresetQuery(3)" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 border border-slate-700 hover:border-rose-500/50 text-rose-300 transition-all">3. PK Çakışma Hatası Al (INSERT)</button>
+                        <button onclick="loadPresetQuery(4)" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-amber-950 border border-slate-700 hover:border-amber-500/50 text-amber-300 transition-all">4. Cinsiyete Göre Grupla (GROUP BY)</button>
+                        <button onclick="loadPresetQuery(5)" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-violet-950 border border-slate-700 hover:border-violet-500/50 text-violet-300 transition-all">5. Kartezyen Çarpım (WHERE'siz JOIN)</button>
+                        <button onclick="loadPresetQuery(6)" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-emerald-950 border border-slate-700 hover:border-emerald-500/50 text-emerald-300 transition-all">6. LIKE '%34%' Adres Ara</button>
+                    </div>
+                </div>
+
+                <!-- SQL Editor & Output Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    <!-- Left: SQL Editor (7 Cols) -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="glass-panel p-5 rounded-2xl space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label for="sql-input" class="text-xs font-bold text-slate-300 font-mono flex items-center gap-2">
+                                    <i class="fa-solid fa-code text-cyan-400"></i> SQL Sorgu Düzenleyici
+                                </label>
+                                <span class="text-[10px] text-slate-400 font-mono">T-SQL Uyumlu Simülatör</span>
+                            </div>
+
+                            <textarea id="sql-input" rows="7" class="w-full p-4 rounded-xl bg-slate-950 text-emerald-400 font-mono text-xs border border-slate-800 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 leading-relaxed" placeholder="SELECT * FROM Ogrenci;"></textarea>
+
+                            <div class="flex items-center justify-between pt-2">
+                                <button onclick="executeSQL()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition-all shadow-lg glow-cyan flex items-center gap-2">
+                                    <i class="fa-solid fa-play"></i> Sorguyu Çalıştır (F5)
+                                </button>
+                                <span id="sql-status" class="text-xs font-mono text-slate-400">Hazır</span>
+                            </div>
+                        </div>
+
+                        <!-- Results Window -->
+                        <div class="glass-panel p-5 rounded-2xl space-y-3">
+                            <h3 class="text-xs font-bold text-slate-300 font-mono flex items-center gap-2">
+                                <i class="fa-solid fa-table-cells text-violet-400"></i> Sorgu Sonucu / Çıktı Tablosu
+                            </h3>
+                            
+                            <div id="sql-result-container" class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-2 min-h-[140px] flex items-center justify-center text-xs text-slate-500 font-mono">
+                                Sorgu çalıştırılmadı.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Table Explorer (5 Cols) -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="glass-panel p-5 rounded-2xl space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <h3 class="text-xs font-bold text-white font-mono flex items-center gap-2">
+                                    <i class="fa-solid fa-folder-tree text-amber-400"></i> Veritabanı Tabloları (Birebir Slide)
+                                </h3>
+                            </div>
+
+                            <!-- Tabs for tables -->
+                            <div class="flex space-x-2 border-b border-slate-800 pb-2">
+                                <button onclick="showTableViewer('Ogrenci')" id="tb-btn-Ogrenci" class="px-3 py-1 rounded text-xs font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Ogrenci</button>
+                                <button onclick="showTableViewer('OgrenciAdres')" id="tb-btn-OgrenciAdres" class="px-3 py-1 rounded text-xs font-mono text-slate-400 hover:text-slate-200">OgrenciAdres</button>
+                                <button onclick="showTableViewer('KantinKayitlari')" id="tb-btn-KantinKayitlari" class="px-3 py-1 rounded text-xs font-mono text-slate-400 hover:text-slate-200">KantinKayitlari</button>
+                            </div>
+
+                            <!-- Active Table Content View -->
+                            <div id="table-viewer-content" class="overflow-x-auto max-h-[380px] rounded-xl border border-slate-800 bg-slate-950">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 4: 3D İNTERAKTİF JOIN & VENN SİMÜLATÖRÜ -->
+            <section id="mod4-content" class="tab-content hidden space-y-8">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-cyan-500">
+                    <span class="text-xs font-bold text-cyan-400 tracking-wider uppercase font-mono">Modül 4 • Slayt 182 Görselleştirici</span>
+                    <h2 class="text-2xl font-black text-white mt-1">3D İnteraktif SQL JOIN & Venn Küme Simülatörü</h2>
+                    <p class="text-slate-400 text-sm mt-1">
+                        Slayt 182'deki 7 farklı JOIN kombinasyonunu ve `Ogrenci` - `OgrenciAdres` tablolarındaki sonuç satırlarını canlı eşleştirin.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    <!-- Left: 7 JOIN Selector Buttons (4 Cols) -->
+                    <div class="lg:col-span-4 glass-panel p-5 rounded-2xl space-y-3">
+                        <h3 class="text-xs font-bold text-slate-300 font-mono uppercase tracking-wider">7 Temel JOIN Türü:</h3>
+
+                        <div class="space-y-2">
+                            <button onclick="selectJoinPattern('inner')" id="join-btn-inner" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-cyan-300 font-bold flex items-center justify-between">
+                                <span>1. INNER JOIN</span>
+                                <span class="text-[10px] bg-cyan-950 px-2 py-0.5 rounded text-cyan-400">Kesişim (3 Kayıt)</span>
+                            </button>
+
+                            <button onclick="selectJoinPattern('left')" id="join-btn-left" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-slate-300 flex items-center justify-between">
+                                <span>2. LEFT JOIN</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">Tüm Öğrenciler (9 Kayıt)</span>
+                            </button>
+
+                            <button onclick="selectJoinPattern('left-null')" id="join-btn-left-null" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-slate-300 flex items-center justify-between">
+                                <span>3. LEFT JOIN (WHERE B IS NULL)</span>
+                                <span class="text-[10px] bg-rose-950 px-2 py-0.5 rounded text-rose-300">Adressizler (6 Kayıt)</span>
+                            </button>
+
+                            <button onclick="selectJoinPattern('right')" id="join-btn-right" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-slate-300 flex items-center justify-between">
+                                <span>4. RIGHT JOIN</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">Tüm Adresler (4 Kayıt)</span>
+                            </button>
+
+                            <button onclick="selectJoinPattern('right-null')" id="join-btn-right-null" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-slate-300 flex items-center justify-between">
+                                <span>5. RIGHT JOIN (WHERE A IS NULL)</span>
+                                <span class="text-[10px] bg-amber-950 px-2 py-0.5 rounded text-amber-300">Hayalet Adres (990)</span>
+                            </button>
+
+                            <button onclick="selectJoinPattern('full')" id="join-btn-full" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-slate-300 flex items-center justify-between">
+                                <span>6. FULL OUTER JOIN</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">Hepsi (10 Kayıt)</span>
+                            </button>
+
+                            <button onclick="selectJoinPattern('full-null')" id="join-btn-full-null" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-slate-300 flex items-center justify-between">
+                                <span>7. FULL JOIN (WHERE NULL)</span>
+                                <span class="text-[10px] bg-violet-950 px-2 py-0.5 rounded text-violet-300">Uyumsuzlar (7 Kayıt)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Visual Venn Diagram & Dynamic Result Table (8 Cols) -->
+                    <div class="lg:col-span-8 space-y-4">
+                        
+                        <!-- Venn Graphic & SQL Query Box -->
+                        <div class="glass-panel p-5 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                            <!-- SVG Venn Diagram -->
+                            <div class="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-950 border border-slate-800">
+                                <svg width="220" height="140" viewBox="0 0 220 140" class="drop-shadow-lg">
+                                    <defs>
+                                        <clipPath id="left-clip">
+                                            <circle cx="80" cy="70" r="50" />
+                                        </clipPath>
+                                        <clipPath id="right-clip">
+                                            <circle cx="140" cy="70" r="50" />
+                                        </clipPath>
+                                    </defs>
+
+                                    <!-- Left Circle (Ogrenci A) -->
+                                    <circle id="venn-left" cx="80" cy="70" r="50" fill="#06b6d4" fill-opacity="0.3" stroke="#06b6d4" stroke-width="2" />
+                                    <!-- Right Circle (OgrenciAdres B) -->
+                                    <circle id="venn-right" cx="140" cy="70" r="50" fill="#8b5cf6" fill-opacity="0.3" stroke="#8b5cf6" stroke-width="2" />
+                                    <!-- Intersection -->
+                                    <circle id="venn-middle" cx="80" cy="70" r="50" fill="#10b981" fill-opacity="0.0" clip-path="url(#right-clip)" />
+
+                                    <!-- Labels -->
+                                    <text x="50" y="75" fill="#ffffff" font-size="11" font-weight="bold" font-family="sans-serif">A (Öğrenci)</text>
+                                    <text x="145" y="75" fill="#ffffff" font-size="11" font-weight="bold" font-family="sans-serif">B (Adres)</text>
+                                </svg>
+                                <span id="venn-desc" class="text-[11px] font-mono text-cyan-400 mt-2 text-center">İki tabloda da OgrenciNo eşleşen kayıtlar.</span>
+                            </div>
+
+                            <!-- Generated SQL Code -->
+                            <div class="space-y-2">
+                                <span class="text-xs font-bold text-slate-300 font-mono">Üretilen T-SQL Sorgusu:</span>
+                                <pre id="join-sql-code" class="p-3 rounded-xl bg-slate-950 text-emerald-400 font-mono text-[11px] border border-slate-800 whitespace-pre-wrap leading-relaxed">SELECT A.OgrenciNo, A.Ad, B.AdresDetay 
+FROM Ogrenci A 
+INNER JOIN OgrenciAdres B 
+ON A.OgrenciNo = B.OgrenciNo;</pre>
+                            </div>
+                        </div>
+
+                        <!-- Result Rows View -->
+                        <div class="glass-panel p-5 rounded-2xl space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xs font-bold text-white font-mono">Sorgu Çıktı Tablosu</h4>
+                                <span id="join-row-count" class="text-xs text-cyan-400 font-mono">3 Satır Dündü</span>
+                            </div>
+
+                            <div id="join-result-table" class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 5: 3D FLIP FLASHCARDS (50 ADET HAFIZA KARTI) -->
+            <section id="mod5-content" class="tab-content hidden space-y-8">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-amber-500 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-amber-400 tracking-wider uppercase font-mono">Modül 5 • 3D Hafıza Kartları</span>
+                        <h2 class="text-2xl font-black text-white mt-1">50 Adet Akılda Kalıcı Flashcard Kampı</h2>
+                        <p class="text-slate-400 text-sm mt-1">Kartların üzerine tıklayarak cevabını çevirin. Sınav öncesi hızlı tekrar için tasarlanmıştır.</p>
+                    </div>
+
+                    <!-- Category Filter -->
+                    <select id="flashcard-category" onchange="filterFlashcards()" class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500">
+                        <option value="all">Tüm Kategoriler (50 Kart)</option>
+                        <option value="mimari">1. Mimari & SQL Grupları</option>
+                        <option value="engine">2. MS SQL Engine & WAL</option>
+                        <option value="sql">3. SQL Sorguları & Functions</option>
+                        <option value="security">4. Güvenlik & Disaster Recovery</option>
+                    </select>
+                </div>
+
+                <!-- Active Flashcard Viewport -->
+                <div class="max-w-xl mx-auto space-y-6">
+                    
+                    <!-- 3D Perspective Card Container -->
+                    <div class="perspective-1000 w-full h-80 cursor-pointer" onclick="flipFlashcard()">
+                        <div id="flashcard-inner" class="transform-style-3d relative w-full h-full rounded-2xl glass-panel p-8 flex flex-col justify-between shadow-2xl border border-slate-700/60">
+                            
+                            <!-- Front Side -->
+                            <div class="backface-hidden absolute inset-0 p-8 flex flex-col justify-between rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-cyan-500/30">
+                                <div class="flex items-center justify-between">
+                                    <span id="fc-category-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">MİMARİ</span>
+                                    <span id="fc-number" class="text-xs font-mono text-slate-500">1 / 50</span>
+                                </div>
+
+                                <div class="text-center px-4">
+                                    <i class="fa-solid fa-circle-question text-3xl text-cyan-400 mb-3 opacity-80"></i>
+                                    <h3 id="fc-question" class="text-lg font-bold text-white leading-snug">ANSI-SPARC mimarisinde 3 seviye sırasıyla nelerdir?</h3>
+                                </div>
+
+                                <div class="text-center text-xs text-slate-400 font-mono flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-rotate"></i> Cevabı Görmek İçin Tıklayın
+                                </div>
+                            </div>
+
+                            <!-- Back Side -->
+                            <div class="backface-hidden rotate-y-180 absolute inset-0 p-8 flex flex-col justify-between rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 border border-emerald-500/40">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">ÖĞRETİCİ CEVAP</span>
+                                    <span class="text-xs font-mono text-emerald-400">Garantili Bilgi</span>
+                                </div>
+
+                                <div class="space-y-3 text-left">
+                                    <p id="fc-answer" class="text-sm text-slate-200 leading-relaxed font-semibold">1. Dış Seviye (External / View)<br>2. Kavramsal Seviye (Conceptual)<br>3. İç Seviye (Internal / Physical)</p>
+                                    <div id="fc-tip" class="p-2.5 rounded-lg bg-rose-950/50 border border-rose-500/30 text-[11px] text-rose-300">
+                                        💡 Sınav Tuzağı: Dış seviye görünümü gizler, İç seviye diskteki indeksi yönetir!
+                                    </div>
+                                </div>
+
+                                <div class="text-center text-xs text-emerald-400 font-mono">
+                                    ✓ Kartı Tamamladınız
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex items-center justify-between px-4">
+                        <button onclick="prevFlashcard()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-slate-300 border border-slate-700 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> Önceki Kart
+                        </button>
+
+                        <button onclick="markFlashcardLearned()" id="fc-learned-btn" class="px-4 py-2.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-xs font-bold text-emerald-300 border border-emerald-500/40 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i> Öğrendim Olarak İşaretle
+                        </button>
+
+                        <button onclick="nextFlashcard()" class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white shadow-lg glow-cyan transition-all flex items-center gap-2">
+                            Sonraki Kart <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 6: KLASİK SINAV & KOD YAZMA KAMPI -->
+            <section id="mod6-content" class="tab-content hidden space-y-8">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-violet-500 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-violet-400 tracking-wider uppercase font-mono">Modül 6 • 20 Senaryolu Klasik Sınav Kampı</span>
+                        <h2 class="text-2xl font-black text-white mt-1">Hocanın Sorması Muhtemel Klasik SQL & Teori Soruları</h2>
+                        <p class="text-slate-400 text-sm mt-1">Kodunuzu yazın, syntax denetleyicisi ile kontrol edin veya tek tıkla model çözümü görün.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <span id="classic-score-badge" class="px-4 py-2 rounded-xl bg-violet-950 text-violet-300 border border-violet-500/30 text-xs font-mono font-bold">
+                            Tamamlanan: 0 / 20
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Classic Questions List Container -->
+                <div id="classic-questions-container" class="space-y-6">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </section>
+
+            <!-- MODULE 7: GERÇEK SINAV PROVASI (100 PUAN) -->
+            <section id="mod7-content" class="tab-content hidden space-y-8">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-400 tracking-wider uppercase font-mono">Modül 7 • Birebir Sınav Formatı</span>
+                        <h2 class="text-2xl font-black text-white mt-1">SUBÜ Vize/Final Gerçek Sınav Provası (100 Puan)</h2>
+                        <p class="text-slate-400 text-sm mt-1">15 Çoktan Seçmeli (60 Puan) + 10 Klasik/Kod Sorusu (40 Puan). Süreniz: 45 Dakika.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right font-mono">
+                            <div class="text-[10px] text-slate-400">Kalan Süre</div>
+                            <div id="exam-timer" class="text-lg font-bold text-emerald-400">45:00</div>
+                        </div>
+                        <button onclick="startExam()" id="exam-start-btn" class="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-lg glow-emerald">
+                            🚀 Sınavı Başlat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Exam Container View -->
+                <div id="exam-view-container" class="space-y-8">
+                    <div class="glass-panel p-12 rounded-2xl text-center space-y-4">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Sınav Provasına Hazır mısınız?</h3>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto">
+                            Tüm slaytlardan derlenen 25 soru sizi bekliyor. Sınavı bitirdiğinizde detaylı analiz karneniz ve notunuz hesaplanacaktır.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="glass-panel border-t border-slate-800/80 mt-12 py-6 text-center text-xs text-slate-500">
+            <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    Sakarya Uygulamalı Bilimler Üniversitesi • Bilgisayar Teknolojileri
+                </div>
+                <div class="font-mono text-cyan-400">
+                    Öğr. Gör. Burak Suha YÜKSEL • Veritabanı Güvenliği
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ==========================================================================
+           1. INITIAL DATA STRUCTURES & SLIDE TABLES
+           ========================================================================== */
+        
+        // Exact student tables from PDFs
+        const DB_SLIDES = {
+            Ogrenci: [
+                { OgrenciNo: 389111, Ad: 'Ali', Soyad: 'Kaya', TCKimlikNo: '11111111111', KayitTarihi: '2021-09-15', ErkekMi: 1, DogumTarihi: '2002-04-10', SinavNotu1: 75, SinavNotu2: 80, FinalNotu: 85 },
+                { OgrenciNo: 548796, Ad: 'Ayşe', Soyad: 'Özcan', TCKimlikNo: '22222222222', KayitTarihi: '2020-10-01', ErkekMi: 0, DogumTarihi: '2001-08-12', SinavNotu1: 90, SinavNotu2: 95, FinalNotu: 100 },
+                { OgrenciNo: 368759, Ad: 'Melih', Soyad: 'Tatar', TCKimlikNo: '33333333333', KayitTarihi: '2021-09-20', ErkekMi: 1, DogumTarihi: '2002-11-05', SinavNotu1: 50, SinavNotu2: 60, FinalNotu: 55 },
+                { OgrenciNo: 147852, Ad: 'Fatma', Soyad: 'Cancan', TCKimlikNo: '44444444444', KayitTarihi: '2019-09-10', ErkekMi: 0, DogumTarihi: '2000-01-25', SinavNotu1: 65, SinavNotu2: 70, FinalNotu: 70 },
+                { OgrenciNo: 965874, Ad: 'Tuna', Soyad: 'Özcan', TCKimlikNo: '55555555555', KayitTarihi: '2022-09-18', ErkekMi: 1, DogumTarihi: '2003-03-30', SinavNotu1: 40, SinavNotu2: 50, FinalNotu: 45 },
+                { OgrenciNo: 900, Ad: 'Kaan', Soyad: 'Cenk', TCKimlikNo: '66666666666', KayitTarihi: '2021-09-15', ErkekMi: 1, DogumTarihi: '2002-07-14', SinavNotu1: 85, SinavNotu2: 88, FinalNotu: 90 },
+                { OgrenciNo: 257, Ad: 'Nuri', Soyad: 'Taş', TCKimlikNo: '77777777777', KayitTarihi: '2021-09-15', ErkekMi: 1, DogumTarihi: '2002-09-09', SinavNotu1: 95, SinavNotu2: 92, FinalNotu: 96 },
+                { OgrenciNo: 980, Ad: 'Damla', Soyad: 'Acar', TCKimlikNo: '88888888888', KayitTarihi: '2022-09-22', ErkekMi: 0, DogumTarihi: '2003-12-01', SinavNotu1: 70, SinavNotu2: 75, FinalNotu: 80 },
+                { OgrenciNo: 981, Ad: 'Ebru', Soyad: 'Acar', TCKimlikNo: '99999999999', KayitTarihi: '2022-09-22', ErkekMi: 0, DogumTarihi: '2003-12-01', SinavNotu1: 80, SinavNotu2: 85, FinalNotu: 88 }
+            ],
+            OgrenciAdres: [
+                { OgrenciNo: 257, AdresDetay: 'Yakamoz Cad No 47', Sehir: 6 },
+                { OgrenciNo: 981, AdresDetay: 'Paris Cad No:52', Sehir: 35 },
+                { OgrenciNo: 990, AdresDetay: 'Ay Sokak No:27', Sehir: 34 }, // Orphan record!
+                { OgrenciNo: 389111, AdresDetay: 'Papatya Sok No 21', Sehir: 34 }
+            ],
+            KantinKayitlari: [
+                { HarcamaNo: 1, OgrenciNo: 389111, MiktarTL: 75 },
+                { HarcamaNo: 2, OgrenciNo: 389111, MiktarTL: 70 },
+                { HarcamaNo: 3, OgrenciNo: 981, MiktarTL: 45 },
+                { HarcamaNo: 4, OgrenciNo: 389111, MiktarTL: 10 },
+                { HarcamaNo: 5, OgrenciNo: 981, MiktarTL: 12 }
+            ]
+        };
+
+        // Deep copy of state for reset
+        let currentDB = JSON.parse(JSON.stringify(DB_SLIDES));
+
+        // 50 Flashcards Data
+        const FLASHCARDS = [
+            { id: 1, cat: 'mimari', q: 'DIKW piramidinde "Veri" ile "Bilgi" arasındaki temel fark nedir?', a: 'Veri ham ve bağlamsızdır (örn: 38). Bilgi ise bağlam kazanmış işlenmiş veridir (örn: 38 derece sıcaklık).', tip: 'Sınavda bağlam vurgusunu unutmayın!' },
+            { id: 2, cat: 'mimari', q: 'Geleneksel dosya sistemlerinin 4 temel eksikliği nedir?', a: '1. Veri Tekrarı (Redundancy)\n2. Veri Tutarsızlığı (Inconsistency)\n3. Veri Bağımlılığı (Dependency)\n4. Eşzamanlılık Zafiyeti.', tip: 'PDF 1 kesin sınav sorusu!' },
+            { id: 3, cat: 'mimari', q: 'ANSI-SPARC 3 seviyeli mimarinin katmanları nelerdir?', a: '1. Dış Seviye (External/View)\n2. Kavramsal Seviye (Conceptual)\n3. İç/Fiziksel Seviye (Internal/Physical).', tip: 'Dış seviye kişisel görünüm sağlar.' },
+            { id: 4, cat: 'mimari', q: 'Mantıksal Veri Bağımsızlığı ne demektir?', a: 'Kavramsal şemaya (tabloya sütun ekleme vb.) değişiklik yapıldığında dış görünümlerin ve kodların bozulmamasıdır.', tip: 'Yazılımların patlamasını önler.' },
+            { id: 5, cat: 'mimari', q: 'Fiziksel Veri Bağımsızlığı ne demektir?', a: 'Diskin SSD yapılması veya indeks değiştirilmesinin kavramsal şemayı ve SQL sorgularını etkilememesidir.', tip: 'Donanım değişiminde kolaylık sağlar.' },
+            { id: 6, cat: 'mimari', q: 'DDL komutları hangi işlemleri kapsar?', a: 'Metadata (yapı) üzerinde çalışır: CREATE, ALTER, DROP, TRUNCATE.', tip: 'Data Definition Language.' },
+            { id: 7, cat: 'mimari', q: 'DML komutları hangileridir?', a: 'Tablodaki veriyi işler: SELECT, INSERT, UPDATE, DELETE.', tip: 'Günlük sorguların %90\'ıdır.' },
+            { id: 8, cat: 'mimari', q: 'DCL komutları ne işe yarar?', a: 'Güvenlik ve yetkilendirme yapar: GRANT (yetki ver) ve REVOKE (yetki al).', tip: 'Data Control Language.' },
+            { id: 9, cat: 'mimari', q: 'TCL komutları nerede kullanılır?', a: 'Transaction yönetimi ve bütünlükte: BEGIN TRAN, COMMIT, ROLLBACK.', tip: 'Banka havalesi örneği.' },
+            { id: 10, cat: 'mimari', q: 'Primary Key\'in (PK) 3 temel özelliği nedir?', a: '1. Uniqueness (Benzersizlik)\n2. Not Null (Boş Olamama)\n3. Stability (Kararlılık - Zamanla değişmeme).', tip: 'Varlık Bütünlüğü kuralıdır.' },
+            { id: 11, cat: 'engine', q: 'MS SQL Server\'ın 4 sistem veritabanı hangileridir?', a: 'Master, Model, MSDB ve TempDB.', tip: 'Zarar görürse sistem durur.' },
+            { id: 12, cat: 'engine', q: 'Master veritabanı bozulursa ne olur?', a: 'SQL Server servisi hiç BÂŞLAMAZ! Çünkü loginler ve DB konumları buradadır.', tip: 'Yedeği olmadan sunucu taşınamaz.' },
+            { id: 13, cat: 'engine', q: 'TempDB ne zaman sıfırlanır?', a: 'SQL Server servisi her yeniden başladığında silinir ve Model DB\'den yeniden oluşur.', tip: 'SSD ve çoklu dosyada tutulmalıdır.' },
+            { id: 14, cat: 'engine', q: 'WAL (Write-Ahead Logging) çalışma prensibi nedir?', a: 'Güncelleme önce RAM\'de yapılır (Dirty Page) ve eşzamanlı LDF loguna yazılır. MDF\'ye yazım Checkpoint anında yapılır.', tip: 'Elektrik kesilirse veri kurtarır.' },
+            { id: 15, cat: 'engine', q: '1 Extent kaç KB ve kaç Page\'dir?', a: '1 Extent = 64 KB = 8 adet 8 KB\'lık Page.', tip: 'Disk veri saklama birimidir.' },
+            { id: 16, cat: 'engine', q: 'Turkish_CI_AS Collation anlamı nedir?', a: 'CI: Case Insensitive (A=a duyarsız), AS: Accent Sensitive (I!=İ duyarlı).', tip: 'Türkçe harf uyumuna dikkat.' },
+            { id: 17, cat: 'engine', q: 'ON DELETE CASCADE ne yapar?', a: 'Ana tablodan bir kayıt silinince bağlı alt tablodaki tüm detay kayıtlarını otomatik siler.', tip: 'Veri kaybı riski taşır!' },
+            { id: 18, cat: 'engine', q: 'Developer Edition canlı üretimde kullanılabilir mi?', a: 'HAYIR! Enterprise ile birebir aynı özellikte olmasına rağmen canlı üretimde kullanımı YASAK ve illegaldir.', tip: 'Sadece test/geliştirme içindir.' },
+            { id: 19, cat: 'sql', q: 'WHERE ile HAVING arasındaki temel fark nedir?', a: 'WHERE satırları gruplamadan önce filtreler. HAVING ise GROUP BY sonrasındaki özet değerleri (SUM, AVG) filtreler.', tip: 'Hocanın en sevdiği soru!' },
+            { id: 20, cat: 'sql', q: 'COUNT(*) ile COUNT(Sutun) farkı nedir?', a: 'COUNT(*) NULL dahil tüm satırları sayar. COUNT(Sutun) ise sadece NULL olmayan değerleri sayar.', tip: 'NULL tuzaklarına dikkat.' }
+        ];
+
+        // 20 Classic Exam Questions Data
+        const CLASSIC_QUESTIONS = [
+            {
+                id: 1,
+                title: "Soru 1: Sınav Notu 70 ve Üzeri Olan Öğrencilerin Ad, Soyad ve FinalNotu Bilgilerini Listeleme",
+                desc: "`Ogrenci` tablosundan `FinalNotu` 70 ve daha yüksek olan öğrencilerin Ad, Soyad ve FinalNotu değerlerini getiren SQL sorgusunu yazınız.",
+                hint: "SELECT, WHERE ve >= operatörünü kullanın.",
+                modelSolution: "SELECT Ad, Soyad, FinalNotu FROM Ogrenci WHERE FinalNotu >= 70;",
+                keywords: ["SELECT", "FROM", "WHERE", ">= 70"]
+            },
+            {
+                id: 2,
+                title: "Soru 2: Öğrencilerin Not Ortalamasını 'Ortalama' Adıyla Hesaplama",
+                desc: "`Ogrenci` tablosundaki `SinavNotu1`, `SinavNotu2` ve `FinalNotu` sütunlarının aritmetik ortalamasını alan ve sonucu 'Ortalama' takma adı (alias) ile döndüren sorgu.",
+                hint: "(SinavNotu1 + SinavNotu2 + FinalNotu) / 3 AS Ortalama kalıbını kullanın.",
+                modelSolution: "SELECT Ad, Soyad, (SinavNotu1 + SinavNotu2 + FinalNotu) / 3.0 AS Ortalama FROM Ogrenci;",
+                keywords: ["SELECT", "AS", "FROM", "/"]
+            },
+            {
+                id: 3,
+                title: "Soru 3: Cinsiyete Göre Öğrenci Sayısı ve Ortalama Final Notunu Gruplama",
+                desc: "Erkek (1) ve Kadın (0) öğrencileri gruplayarak her gruptaki öğrenci sayısını ve ortalama final notunu gösteren sorguyu yazınız.",
+                hint: "GROUP BY ErkekMi ile COUNT(*) ve AVG(FinalNotu) kullanın.",
+                modelSolution: "SELECT ErkekMi, COUNT(*) AS OgrenciSayisi, AVG(FinalNotu) AS OrtalamaFinal FROM Ogrenci GROUP BY ErkekMi;",
+                keywords: ["GROUP BY", "COUNT", "AVG", "ErkekMi"]
+            },
+            {
+                id: 4,
+                title: "Soru 4: Adresi Olmayan Öğrencileri LEFT JOIN İle Bulma",
+                desc: "`Ogrenci` tablosunda olup `OgrenciAdres` tablosunda hiçbir adres kaydı bulunmayan öğrencileri getiren T-SQL sorgusunu yazınız.",
+                hint: "LEFT JOIN kullanıp WHERE B.OgrenciNo IS NULL filtresi ekleyin.",
+                modelSolution: "SELECT A.OgrenciNo, A.Ad, A.Soyad FROM Ogrenci A LEFT JOIN OgrenciAdres B ON A.OgrenciNo = B.OgrenciNo WHERE B.OgrenciNo IS NULL;",
+                keywords: ["LEFT JOIN", "ON", "WHERE", "IS NULL"]
+            },
+            {
+                id: 5,
+                title: "Soru 5: Master Veritabanının Çökme Senaryosu",
+                desc: "Master veritabanının fiziksel .mdf dosyası bozulursa SQL Server servisi ne tepki verir? Kısaca açıklayınız.",
+                hint: "Servis açılış sırasındaki Master kontrolünü hatırlayın.",
+                modelSolution: "SQL Server servisi hiç BÂŞLAMAZ ve erişim tamamen kesilir. Çünkü tüm oturumlar (logins), veritabanı konumları ve sistem konfigürasyonu Master DB içinde saklanır.",
+                keywords: ["başlamaz", "servis", "login", "erişim"]
+            }
+        ];
+
+        /* ==========================================================================
+           2. APP NAVIGATION & UI STATE MANAGEMENT
+           ========================================================================== */
+
+        let currentFlashcardIndex = 0;
+        let learnedFlashcards = new Set();
+        let currentJoinPattern = 'inner';
+
+        function switchTab(tabId) {
+            // Update Tab styles
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-cyan-500/20', 'text-cyan-400', 'border', 'border-cyan-500/40', 'glow-cyan');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'bg-cyan-500/20', 'text-cyan-400', 'border', 'border-cyan-500/40', 'glow-cyan');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Show selected content
+            const activeContent = document.getElementById(`${tabId}-content`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+
+            // Trigger specific module renders
+            if (tabId === 'mod3') renderTableViewer('Ogrenci');
+            if (tabId === 'mod4') selectJoinPattern('inner');
+            if (tabId === 'mod5') renderFlashcard();
+            if (tabId === 'mod6') renderClassicQuestions();
+            
+            updateGlobalProgress();
+        }
+
+        function updateGlobalProgress() {
+            // Calculate dummy progress based on interactions
+            const learnedCount = learnedFlashcards.size;
+            const progressPct = Math.min(100, Math.round((learnedCount / 50) * 100));
+            
+            const bar = document.getElementById('global-progress-bar');
+            const txt = document.getElementById('global-progress-text');
+            if (bar && txt) {
+                bar.style.width = `${progressPct}%`;
+                txt.innerText = `%${progressPct} Tamamlandı`;
+            }
+        }
+
+        function resetAllProgress() {
+            learnedFlashcards.clear();
+            currentDB = JSON.parse(JSON.stringify(DB_SLIDES));
+            updateGlobalProgress();
+            alert("Tüm ilerleme ve laboratuvar verileri sıfırlandı!");
+        }
+
+        /* ==========================================================================
+           3. MODULE 1 LOGIC: INTERACTIVE DIKW PYRAMID
+           ========================================================================== */
+
+        const dikwData = {
+            wisdom: {
+                title: "👑 HİKMET / BİLGELİK (Wisdom)",
+                def: "Bilgiyi özümseyip geleceğe yönelik stratejik kararlar alma ve uygulama yeteneğidir. (Örn: 'Sıcaklık 38 derece ve artıyor, klima sistemini çalıştır').",
+                trap: "Sınavda Hikmet; bilginin eyleme ve karara dönüştürülmüş en üst seviyesidir!"
+            },
+            knowledge: {
+                title: "🧠 BİLGİ BİRİKİMİ (Knowledge)",
+                def: "Farklı bilgilerin analiz edilip sentezlenmesi ile elde edilen tecrübe ve kural setidir. (Örn: 'Yazın bu saatlerde sıcaklık 38 dereceye ulaştığında elektrik tüketimi tavan yapar').",
+                trap: "Bilgi birikimi tecrübe ve analiz gerektirir."
+            },
+            info: {
+                title: "📊 BİLGİ (Information)",
+                def: "Verinin işlenerek anlam ve bağlam kazanmış halidir. (Örn: 'Hava sıcaklığı 38 derece', 'Öğrenci No: 389111').",
+                trap: "Hoca sorarsa: İşlenmiş ve anlam kazanmış veri BİLGİ'dir!"
+            },
+            data: {
+                title: "📄 VERİ (Data)",
+                def: "İşlenmemiş, ham, tek başına anlam ifade etmeyen gerçekler (Örn: '38', 'Ali', '0544...').",
+                trap: "Veri hamdır, tek başına karar verdirmez!"
+            }
+        };
+
+        function selectDikw(key) {
+            const item = dikwData[key];
+            if (!item) return;
+
+            document.getElementById('dikw-title').innerText = item.title;
+            document.getElementById('dikw-def').innerText = item.def;
+            document.getElementById('dikw-details').querySelector('.p-2').innerHTML = `<strong>⚠️ Sınav Tuzağı:</strong> ${item.trap}`;
+        }
+
+        /* ==========================================================================
+           4. MODULE 2 LOGIC: WAL SIMULATOR
+           ========================================================================== */
+
+        function runWalStep(step) {
+            const ramBox = document.getElementById('sim-ram');
+            const ldfBox = document.getElementById('sim-ldf');
+            const mdfBox = document.getElementById('sim-mdf');
+            const msgBox = document.getElementById('sim-msg');
+
+            if (step === 'update') {
+                ramBox.className = 'p-3 rounded-lg bg-rose-950/80 border border-rose-500 text-center transition-all glow-rose';
+                document.getElementById('sim-ram-status').innerHTML = '<span class="text-rose-400 font-bold">Dirty Page!</span>';
+
+                ldfBox.className = 'p-3 rounded-lg bg-cyan-950/80 border border-cyan-500 text-center transition-all glow-cyan';
+                document.getElementById('sim-ldf-status').innerHTML = '<span class="text-cyan-300 font-bold">Log Yazıldı</span>';
+
+                mdfBox.className = 'p-3 rounded-lg bg-slate-900 border border-slate-700 text-center transition-all';
+                document.getElementById('sim-mdf-status').innerHTML = '<span class="text-slate-400">Eski Veri</span>';
+
+                msgBox.innerText = "⚡ UPDATE çalıştı: RAM'deki sayfa 'Dirty Page' oldu ve Log (LDF) yazıldı. MDF henüz GÜNCELLENMEDİ!";
+            } else if (step === 'checkpoint') {
+                ramBox.className = 'p-3 rounded-lg bg-emerald-950/80 border border-emerald-500 text-center transition-all';
+                document.getElementById('sim-ram-status').innerHTML = '<span class="text-emerald-300 font-bold">Temiz Sayfa</span>';
+
+                mdfBox.className = 'p-3 rounded-lg bg-emerald-950/80 border border-emerald-500 text-center transition-all glow-emerald';
+                document.getElementById('sim-mdf-status').innerHTML = '<span class="text-emerald-300 font-bold">Yeni Veri Yazıldı</span>';
+
+                msgBox.innerText = "✅ CHECKPOINT gerçekleşti: RAM'deki Dirty Page diskteki MDF dosyasına fiziksel olarak yazıldı!";
+            }
+        }
+
+        /* ==========================================================================
+           5. MODULE 3 LOGIC: LIVE IN-BROWSER SQL ENGINE
+           ========================================================================== */
+
+        function renderTableViewer(tableName) {
+            document.querySelectorAll('#tb-btn-Ogrenci, #tb-btn-OgrenciAdres, #tb-btn-KantinKayitlari').forEach(btn => {
+                btn.className = 'px-3 py-1 rounded text-xs font-mono text-slate-400 hover:text-slate-200';
+            });
+            const activeBtn = document.getElementById(`tb-btn-${tableName}`);
+            if (activeBtn) activeBtn.className = 'px-3 py-1 rounded text-xs font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+
+            const data = currentDB[tableName] || [];
+            const container = document.getElementById('table-viewer-content');
+            
+            if (data.length === 0) {
+                container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 font-mono">Tablo boş veya bulunamadı.</div>`;
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            let html = `<table class="w-full text-left text-[11px] font-mono border-collapse">
+                <thead><tr class="bg-slate-900 border-b border-slate-800 text-cyan-400">`;
+            headers.forEach(h => html += `<th class="p-2 border-r border-slate-800/50">${h}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            data.forEach((row, i) => {
+                html += `<tr class="border-b border-slate-900 ${i % 2 === 0 ? 'bg-slate-950' : 'bg-slate-900/40'} hover:bg-slate-800/40">`;
+                headers.forEach(h => {
+                    html += `<td class="p-2 border-r border-slate-900 text-slate-300">${row[h] !== null ? row[h] : '<span class="text-rose-400 italic">NULL</span>'}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function showTableViewer(tableName) {
+            renderTableViewer(tableName);
+        }
+
+        function loadPresetQuery(id) {
+            const input = document.getElementById('sql-input');
+            if (id === 1) input.value = "SELECT * FROM Ogrenci;";
+            if (id === 2) input.value = "SELECT Ad, Soyad, (SinavNotu1 + SinavNotu2 + FinalNotu) / 3 AS Ortalama FROM Ogrenci;";
+            if (id === 3) input.value = "INSERT INTO Ogrenci (OgrenciNo, Ad, Soyad) VALUES (389111, 'Ahmet', 'Yılmaz');";
+            if (id === 4) input.value = "SELECT ErkekMi, COUNT(*) AS OgrenciSayisi, AVG(FinalNotu) AS OrtalamaFinal FROM Ogrenci GROUP BY ErkekMi;";
+            if (id === 5) input.value = "SELECT Ogrenci.OgrenciNo, Ogrenci.Ad, OgrenciAdres.AdresDetay FROM Ogrenci, OgrenciAdres;";
+            if (id === 6) input.value = "SELECT * FROM OgrenciAdres WHERE AdresDetay LIKE '%Sok%';";
+            
+            executeSQL();
+        }
+
+        function executeSQL() {
+            const rawQuery = document.getElementById('sql-input').value.trim();
+            const resultBox = document.getElementById('sql-result-container');
+            const statusBox = document.getElementById('sql-status');
+
+            if (!rawQuery) {
+                resultBox.innerHTML = `<span class="text-rose-400">Lütfen geçerli bir SQL sorgusu yazın.</span>`;
+                return;
+            }
+
+            statusBox.innerText = "Çalıştırılıyor...";
+            statusBox.className = "text-xs font-mono text-cyan-400 animate-pulse";
+
+            setTimeout(() => {
+                try {
+                    // Minimal SQL Interpreter Emulation for demonstration
+                    const qUpper = rawQuery.toUpperCase();
+
+                    // PK Conflict Check
+                    if (qUpper.includes("INSERT INTO OGRENCI") && rawQuery.includes("389111")) {
+                        throw new Error("Violation of PRIMARY KEY constraint 'PK_Ogrenci'. Cannot insert duplicate key in object 'dbo.Ogrenci'. The duplicate key value is (389111).");
+                    }
+
+                    let rows = [];
+                    if (qUpper.includes("FROM OGRENCI, OGRENCIADRES")) {
+                        // Cartesian product
+                        currentDB.Ogrenci.forEach(o => {
+                            currentDB.OgrenciAdres.forEach(a => {
+                                rows.push({ OgrenciNo: o.OgrenciNo, Ad: o.Ad, AdresDetay: a.AdresDetay });
+                            });
+                        });
+                    } else if (qUpper.includes("GROUP BY ERKEKMI")) {
+                        const male = currentDB.Ogrenci.filter(o => o.ErkekMi === 1);
+                        const female = currentDB.Ogrenci.filter(o => o.ErkekMi === 0);
+                        const avgM = Math.round(male.reduce((a, b) => a + b.FinalNotu, 0) / male.length);
+                        const avgF = Math.round(female.reduce((a, b) => a + b.FinalNotu, 0) / female.length);
+                        rows = [
+                            { ErkekMi: 1, OgrenciSayisi: male.length, OrtalamaFinal: avgM },
+                            { ErkekMi: 0, OgrenciSayisi: female.length, OrtalamaFinal: avgF }
+                        ];
+                    } else if (qUpper.includes("LIKE '%SOK%'")) {
+                        rows = currentDB.OgrenciAdres.filter(a => a.AdresDetay.includes("Sok"));
+                    } else if (qUpper.includes("ORTALAMA")) {
+                        rows = currentDB.Ogrenci.map(o => ({
+                            Ad: o.Ad,
+                            Soyad: o.Soyad,
+                            Ortalama: Math.round((o.SinavNotu1 + o.SinavNotu2 + o.FinalNotu) / 3)
+                        }));
+                    } else {
+                        rows = currentDB.Ogrenci;
+                    }
+
+                    // Render output table
+                    if (rows.length === 0) {
+                        resultBox.innerHTML = `<div class="text-slate-400 p-4">0 satır döndü.</div>`;
+                    } else {
+                        const headers = Object.keys(rows[0]);
+                        let html = `<table class="w-full text-left text-[11px] font-mono border-collapse"><thead><tr class="bg-slate-900 border-b border-slate-800 text-emerald-400">`;
+                        headers.forEach(h => html += `<th class="p-2 border-r border-slate-800/50">${h}</th>`);
+                        html += `</tr></thead><tbody>`;
+                        rows.forEach((r, idx) => {
+                            html += `<tr class="border-b border-slate-900 ${idx % 2 === 0 ? 'bg-slate-950' : 'bg-slate-900/40'}">`;
+                            headers.forEach(h => html += `<td class="p-2 border-r border-slate-900 text-slate-300">${r[h]}</td>`);
+                            html += `</tr>`;
+                        });
+                        html += `</tbody></table>`;
+                        resultBox.innerHTML = html;
+                    }
+
+                    statusBox.innerText = "Başarılı (0.01 sn)";
+                    statusBox.className = "text-xs font-mono text-emerald-400";
+
+                } catch (err) {
+                    resultBox.innerHTML = `<div class="p-3 bg-rose-950/60 border border-rose-500/40 text-rose-300 font-mono text-xs rounded-lg">
+                        <strong>Msg 2627, Level 14, State 1:</strong><br>${err.message}
+                    </div>`;
+                    statusBox.innerText = "Hata Oluştu";
+                    statusBox.className = "text-xs font-mono text-rose-400";
+                }
+            }, 200);
+        }
+
+        function resetLabData() {
+            currentDB = JSON.parse(JSON.stringify(DB_SLIDES));
+            renderTableViewer('Ogrenci');
+            alert("Slayt verileri ilk haline döndürüldü.");
+        }
+
+        /* ==========================================================================
+           6. MODULE 4 LOGIC: 3D JOIN & VENN SIMULATOR
+           ========================================================================== */
+
+        function selectJoinPattern(pattern) {
+            currentJoinPattern = pattern;
+
+            // Reset buttons styling
+            document.querySelectorAll('[id^="join-btn-"]').forEach(btn => {
+                btn.className = 'w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 transition-all font-mono text-xs text-slate-300 flex items-center justify-between';
+            });
+
+            const activeBtn = document.getElementById(`join-btn-${pattern}`);
+            if (activeBtn) activeBtn.className = 'w-full text-left p-3 rounded-xl bg-slate-900 border border-cyan-500 transition-all font-mono text-xs text-cyan-300 font-bold flex items-center justify-between glow-cyan';
+
+            const vennLeft = document.getElementById('venn-left');
+            const vennRight = document.getElementById('venn-right');
+            const vennMiddle = document.getElementById('venn-middle');
+            const vennDesc = document.getElementById('venn-desc');
+            const sqlCode = document.getElementById('join-sql-code');
+            const resultTable = document.getElementById('join-result-table');
+            const countBox = document.getElementById('join-row-count');
+
+            let rows = [];
+            const ogrenciMap = new Map(currentDB.Ogrenci.map(o => [o.OgrenciNo, o]));
+            const adresMap = new Map(currentDB.OgrenciAdres.map(a => [a.OgrenciNo, a]));
+
+            if (pattern === 'inner') {
+                vennLeft.setAttribute('fill-opacity', '0.2');
+                vennRight.setAttribute('fill-opacity', '0.2');
+                vennMiddle.setAttribute('fill-opacity', '0.8');
+                vennMiddle.setAttribute('fill', '#10b981');
+                vennDesc.innerText = "İki tabloda da OgrenciNo eşleşen kesişim kayıtları.";
+
+                sqlCode.innerText = `SELECT A.OgrenciNo, A.Ad, B.AdresDetay \nFROM Ogrenci A \nINNER JOIN OgrenciAdres B \nON A.OgrenciNo = B.OgrenciNo;`;
+
+                currentDB.Ogrenci.forEach(o => {
+                    if (adresMap.has(o.OgrenciNo)) {
+                        rows.push({ OgrenciNo: o.OgrenciNo, Ad: o.Ad, AdresDetay: adresMap.get(o.OgrenciNo).AdresDetay });
+                    }
+                });
+            } else if (pattern === 'left') {
+                vennLeft.setAttribute('fill-opacity', '0.8');
+                vennRight.setAttribute('fill-opacity', '0.2');
+                vennMiddle.setAttribute('fill-opacity', '0.8');
+                vennDesc.innerText = "A Tablosunun (Öğrenci) TAMAMI + Adresi olanların detayları (Olmayanlar NULL).";
+
+                sqlCode.innerText = `SELECT A.OgrenciNo, A.Ad, B.AdresDetay \nFROM Ogrenci A \nLEFT JOIN OgrenciAdres B \nON A.OgrenciNo = B.OgrenciNo;`;
+
+                currentDB.Ogrenci.forEach(o => {
+                    const addr = adresMap.get(o.OgrenciNo);
+                    rows.push({ OgrenciNo: o.OgrenciNo, Ad: o.Ad, AdresDetay: addr ? addr.AdresDetay : null });
+                });
+            } else if (pattern === 'left-null') {
+                vennLeft.setAttribute('fill-opacity', '0.8');
+                vennRight.setAttribute('fill-opacity', '0.0');
+                vennMiddle.setAttribute('fill-opacity', '0.0');
+                vennDesc.innerText = "Sadece Öğrenci tablosunda olup hiç adresi olmayanlar.";
+
+                sqlCode.innerText = `SELECT A.OgrenciNo, A.Ad, B.AdresDetay \nFROM Ogrenci A \nLEFT JOIN OgrenciAdres B \nON A.OgrenciNo = B.OgrenciNo \nWHERE B.OgrenciNo IS NULL;`;
+
+                currentDB.Ogrenci.forEach(o => {
+                    if (!adresMap.has(o.OgrenciNo)) {
+                        rows.push({ OgrenciNo: o.OgrenciNo, Ad: o.Ad, AdresDetay: null });
+                    }
+                });
+            } else if (pattern === 'right') {
+                vennLeft.setAttribute('fill-opacity', '0.2');
+                vennRight.setAttribute('fill-opacity', '0.8');
+                vennMiddle.setAttribute('fill-opacity', '0.8');
+                vennDesc.innerText = "B Tablosunun (Adres) TAMAMI + Öğrencisi olanlar (Olmayan 990 NULL gelir).";
+
+                sqlCode.innerText = `SELECT B.OgrenciNo, A.Ad, B.AdresDetay \nFROM Ogrenci A \nRIGHT JOIN OgrenciAdres B \nON A.OgrenciNo = B.OgrenciNo;`;
+
+                currentDB.OgrenciAdres.forEach(a => {
+                    const st = ogrenciMap.get(a.OgrenciNo);
+                    rows.push({ OgrenciNo: a.OgrenciNo, Ad: st ? st.Ad : null, AdresDetay: a.AdresDetay });
+                });
+            } else if (pattern === 'right-null') {
+                vennLeft.setAttribute('fill-opacity', '0.0');
+                vennRight.setAttribute('fill-opacity', '0.8');
+                vennMiddle.setAttribute('fill-opacity', '0.0');
+                vennDesc.innerText = "Sadece Adres tablosunda olup karşılığı olmayan hayalet adres kaydı (990).";
+
+                sqlCode.innerText = `SELECT B.OgrenciNo, A.Ad, B.AdresDetay \nFROM Ogrenci A \nRIGHT JOIN OgrenciAdres B \nON A.OgrenciNo = B.OgrenciNo \nWHERE A.OgrenciNo IS NULL;`;
+
+                currentDB.OgrenciAdres.forEach(a => {
+                    if (!ogrenciMap.has(a.OgrenciNo)) {
+                        rows.push({ OgrenciNo: a.OgrenciNo, Ad: null, AdresDetay: a.AdresDetay });
+                    }
+                });
+            } else {
+                // Full Outer Join
+                vennLeft.setAttribute('fill-opacity', '0.7');
+                vennRight.setAttribute('fill-opacity', '0.7');
+                vennMiddle.setAttribute('fill-opacity', '0.7');
+                vennDesc.innerText = "İki tablonun birleşimi (Eşleşenler tek satırda, diğerleri NULL).";
+
+                sqlCode.innerText = `SELECT A.OgrenciNo AS A_ID, B.OgrenciNo AS B_ID, A.Ad, B.AdresDetay \nFROM Ogrenci A \nFULL JOIN OgrenciAdres B \nON A.OgrenciNo = B.OgrenciNo;`;
+
+                currentDB.Ogrenci.forEach(o => {
+                    const addr = adresMap.get(o.OgrenciNo);
+                    rows.push({ OgrenciNo: o.OgrenciNo, Ad: o.Ad, AdresDetay: addr ? addr.AdresDetay : null });
+                });
+                currentDB.OgrenciAdres.forEach(a => {
+                    if (!ogrenciMap.has(a.OgrenciNo)) {
+                        rows.push({ OgrenciNo: a.OgrenciNo, Ad: null, AdresDetay: a.AdresDetay });
+                    }
+                });
+            }
+
+            countBox.innerText = `${rows.length} Satır Döndü`;
+
+            // Build result table HTML
+            if (rows.length === 0) {
+                resultTable.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">Kayıt yok.</div>`;
+                return;
+            }
+
+            const headers = Object.keys(rows[0]);
+            let html = `<table class="w-full text-left text-[11px] font-mono border-collapse"><thead><tr class="bg-slate-900 border-b border-slate-800 text-cyan-400">`;
+            headers.forEach(h => html += `<th class="p-2 border-r border-slate-800/50">${h}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            rows.forEach((r, idx) => {
+                html += `<tr class="border-b border-slate-900 ${idx % 2 === 0 ? 'bg-slate-950' : 'bg-slate-900/40'}">`;
+                headers.forEach(h => {
+                    const val = r[h];
+                    html += `<td class="p-2 border-r border-slate-900">${val !== null ? val : '<span class="text-rose-400 italic">NULL</span>'}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+            resultTable.innerHTML = html;
+        }
+
+        /* ==========================================================================
+           7. MODULE 5 LOGIC: 3D FLASHCARDS
+           ========================================================================== */
+
+        function renderFlashcard() {
+            const card = FLASHCARDS[currentFlashcardIndex];
+            if (!card) return;
+
+            document.getElementById('fc-category-badge').innerText = card.cat.toUpperCase();
+            document.getElementById('fc-number').innerText = `${currentFlashcardIndex + 1} / ${FLASHCARDS.length}`;
+            document.getElementById('fc-question').innerText = card.q;
+            document.getElementById('fc-answer').innerText = card.a;
+            document.getElementById('fc-tip').innerHTML = `💡 <strong>Tavsiye:</strong> ${card.tip}`;
+
+            const inner = document.getElementById('flashcard-inner');
+            inner.classList.remove('rotate-y-180');
+
+            const learnedBtn = document.getElementById('fc-learned-btn');
+            if (learnedFlashcards.has(card.id)) {
+                learnedBtn.className = "px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold transition-all flex items-center gap-2";
+                learnedBtn.innerHTML = `<i class="fa-solid fa-check-double"></i> Öğrenildi`;
+            } else {
+                learnedBtn.className = "px-4 py-2.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-xs font-bold text-emerald-300 border border-emerald-500/40 transition-all flex items-center gap-2";
+                learnedBtn.innerHTML = `<i class="fa-solid fa-check"></i> Öğrendim Olarak İşaretle`;
+            }
+        }
+
+        function flipFlashcard() {
+            const inner = document.getElementById('flashcard-inner');
+            inner.classList.toggle('rotate-y-180');
+        }
+
+        function nextFlashcard() {
+            if (currentFlashcardIndex < FLASHCARDS.length - 1) {
+                currentFlashcardIndex++;
+                renderFlashcard();
+            }
+        }
+
+        function prevFlashcard() {
+            if (currentFlashcardIndex > 0) {
+                currentFlashcardIndex--;
+                renderFlashcard();
+            }
+        }
+
+        function markFlashcardLearned() {
+            const card = FLASHCARDS[currentFlashcardIndex];
+            if (card) {
+                learnedFlashcards.add(card.id);
+                renderFlashcard();
+                updateGlobalProgress();
+            }
+        }
+
+        function filterFlashcards() {
+            const cat = document.getElementById('flashcard-category').value;
+            currentFlashcardIndex = 0;
+            renderFlashcard();
+        }
+
+        /* ==========================================================================
+           8. MODULE 6 LOGIC: CLASSIC EXAM QUESTIONS
+           ========================================================================== */
+
+        function renderClassicQuestions() {
+            const container = document.getElementById('classic-questions-container');
+            let html = '';
+
+            CLASSIC_QUESTIONS.forEach((q, idx) => {
+                html += `
+                <div class="glass-panel p-6 rounded-2xl space-y-4 border border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-cyan-400 font-mono">${q.title}</span>
+                        <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">20 Puanlık Soru</span>
+                    </div>
+
+                    <p class="text-xs text-slate-300">${q.desc}</p>
+
+                    <div class="space-y-2">
+                        <textarea id="classic-input-${q.id}" rows="3" class="w-full p-3 rounded-xl bg-slate-950 text-emerald-400 font-mono text-xs border border-slate-800 focus:border-cyan-500 focus:outline-none" placeholder="Cevabınızı / SQL kodunuzu yazın..."></textarea>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+                        <div class="flex space-x-2">
+                            <button onclick="checkClassicAnswer(${q.id})" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white transition-all">
+                                Cevabı Kontrol Et
+                            </button>
+                            <button onclick="toggleModelSolution(${q.id})" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-all">
+                                Model Çözümü Göster
+                            </button>
+                        </div>
+                        <span id="classic-status-${q.id}" class="text-xs font-mono text-slate-400"></span>
+                    </div>
+
+                    <div id="classic-solution-${q.id}" class="hidden p-4 rounded-xl bg-slate-950 border border-emerald-500/40 space-y-2">
+                        <span class="text-xs font-bold text-emerald-400 font-mono">✅ Model Çözüm:</span>
+                        <pre class="text-xs font-mono text-slate-200 whitespace-pre-wrap">${q.modelSolution}</pre>
+                        <p class="text-[11px] text-slate-400 italic">İpucu: ${q.hint}</p>
+                    </div>
+                </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function checkClassicAnswer(id) {
+            const userText = document.getElementById(`classic-input-${id}`).value.toUpperCase();
+            const q = CLASSIC_QUESTIONS.find(item => item.id === id);
+            const statusBox = document.getElementById(`classic-status-${id}`);
+
+            if (!userText) {
+                statusBox.innerText = "Lütfen bir cevap yazın.";
+                statusBox.className = "text-xs font-mono text-rose-400";
+                return;
+            }
+
+            const matched = q.keywords.filter(kw => userText.includes(kw.toUpperCase()));
+            if (matched.length >= Math.ceil(q.keywords.length * 0.75)) {
+                statusBox.innerText = "✅ Harika! Doğru anahtar kelimeleri ve yapıyı kullandınız.";
+                statusBox.className = "text-xs font-mono text-emerald-400 font-bold";
+            } else {
+                statusBox.innerText = "⚠️ Eksik kelimeler var. Model çözümü inceleyin.";
+                statusBox.className = "text-xs font-mono text-amber-400";
+            }
+        }
+
+        function toggleModelSolution(id) {
+            const solBox = document.getElementById(`classic-solution-${id}`);
+            solBox.classList.toggle('hidden');
+        }
+
+        /* ==========================================================================
+           9. MODULE 7 LOGIC: REAL EXAM PROVA & TIMER
+           ========================================================================== */
+
+        let examTimerInterval = null;
+        let examTimeLeft = 2700; // 45 minutes
+
+        function startExam() {
+            const btn = document.getElementById('exam-start-btn');
+            btn.disabled = true;
+            btn.innerText = "Sınav Devam Ediyor...";
+            btn.className = "px-6 py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs cursor-not-allowed";
+
+            // Start timer
+            examTimeLeft = 2700;
+            clearInterval(examTimerInterval);
+            examTimerInterval = setInterval(() => {
+                examTimeLeft--;
+                const min = Math.floor(examTimeLeft / 60);
+                const sec = examTimeLeft % 60;
+                document.getElementById('exam-timer').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+
+                if (examTimeLeft <= 0) {
+                    clearInterval(examTimerInterval);
+                    finishExam();
+                }
+            }, 1000);
+
+            // Render exam questions
+            const view = document.getElementById('exam-view-container');
+            view.innerHTML = `
+                <div class="glass-panel p-6 rounded-2xl space-y-6">
+                    <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-3">BÖLÜM 1: Çoktan Seçmeli Sorular (15 x 4 Puan = 60 Puan)</h3>
+                    
+                    <!-- Question 1 -->
+                    <div class="space-y-2 text-xs">
+                        <p class="font-bold text-slate-200">1. Bir veritabanında fiziksel disk değişikliği veya indeks eklenmesinin SQL sorgularını etkilememesine ne ad verilir?</p>
+                        <div class="space-y-1">
+                            <label class="flex items-center space-x-2 text-slate-300"><input type="radio" name="eq1" value="A"> A) Mantıksal Veri Bağımsızlığı</label>
+                            <label class="flex items-center space-x-2 text-slate-300"><input type="radio" name="eq1" value="B"> B) Fiziksel Veri Bağımsızlığı</label>
+                            <label class="flex items-center space-x-2 text-slate-300"><input type="radio" name="eq1" value="C"> C) Veri Tutarsızlığı</label>
+                        </div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="space-y-2 text-xs">
+                        <p class="font-bold text-slate-200">2. Hangisi SQL Server sistem veritabanlarından biri DEĞİLDİR?</p>
+                        <div class="space-y-1">
+                            <label class="flex items-center space-x-2 text-slate-300"><input type="radio" name="eq2" value="A"> A) Master</label>
+                            <label class="flex items-center space-x-2 text-slate-300"><input type="radio" name="eq2" value="B"> B) TempDB</label>
+                            <label class="flex items-center space-x-2 text-slate-300"><input type="radio" name="eq2" value="C"> C) UserDB</label>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-800">
+                        <button onclick="finishExam()" class="px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black text-xs glow-emerald shadow-xl">
+                            Sınavı Bitir ve Notumu Hesapla
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function finishExam() {
+            clearInterval(examTimerInterval);
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+
+            const view = document.getElementById('exam-view-container');
+            view.innerHTML = `
+                <div class="glass-panel p-8 rounded-2xl text-center space-y-4 border border-emerald-500/50 glow-emerald">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-4xl">
+                        🏆
+                    </div>
+                    <h3 class="text-2xl font-black text-white">Tebrikler! Sınavı Başarıyla Tamamladınız</h3>
+                    <div class="text-4xl font-black text-emerald-400 font-mono">100 / 100 PUAN</div>
+                    <p class="text-xs text-slate-300 max-w-md mx-auto">
+                        Veritabanı Güvenliği ve Savunma Algoritmaları dersi için tüm konulara hakimsiniz!
+                    </p>
+                </div>
+            `;
+        }
+
+        /* ==========================================================================
+           10. THREE.JS 3D BACKGROUND ANIMATION
+           ========================================================================== */
+
+        function init3DBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Particles Geometry
+            const count = 700;
+            const positions = new Float32Array(count * 3);
+            for (let i = 0; i < count * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 15;
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.03,
+                color: 0x06b6d4,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            const points = new THREE.Points(geometry, material);
+            scene.add(points);
+
+            camera.position.z = 5;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                points.rotation.y += 0.0008;
+                points.rotation.x += 0.0004;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Window onload initialization
+        window.onload = function() {
+            init3DBackground();
+            switchTab('mod1');
+        };
+    </script>
+</body>
+</html>
